@@ -136,11 +136,22 @@ int MapBuilderBridge::AddTrajectory(
 
   // Make sure there is no trajectory with 'trajectory_id' yet.
   CHECK_EQ(sensor_bridges_.count(trajectory_id), 0);
+  // set predefined_enu_frame
+  sensor_msgs::NavSatFix::Ptr predefined_enu_frame_position = nullptr;
+  if (node_options_.nav_sat_use_predefined_enu_frame) {
+    predefined_enu_frame_position =
+        boost::make_shared<sensor_msgs::NavSatFix>();
+    predefined_enu_frame_position->latitude =
+        node_options_.nav_sat_predefined_enu_frame_latitude;
+    predefined_enu_frame_position->longitude =
+        node_options_.nav_sat_predefined_enu_frame_longitude;
+  }
   sensor_bridges_[trajectory_id] = absl::make_unique<SensorBridge>(
       trajectory_options.num_subdivisions_per_laser_scan,
       trajectory_options.tracking_frame,
       node_options_.lookup_transform_timeout_sec, tf_buffer_,
-      map_builder_->GetTrajectoryBuilder(trajectory_id));
+      map_builder_->GetTrajectoryBuilder(trajectory_id),
+      predefined_enu_frame_position);
   auto emplace_result =
       trajectory_options_.emplace(trajectory_id, trajectory_options);
   CHECK(emplace_result.second == true);
