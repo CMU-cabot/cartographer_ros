@@ -30,7 +30,6 @@ endif()
 set(CMAKE_AUTOMOC ON)
 find_package(cartographer REQUIRED)
 include("${CARTOGRAPHER_CMAKE_DIR}/functions.cmake")
-set(BUILD_SHARED_LIBS OFF)
 option(BUILD_GRPC "build features that require Cartographer gRPC support" false)
 google_initialize_cartographer_project()
 
@@ -59,7 +58,7 @@ include_directories(
   include
   )
 
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
   src/drawable_submap.cpp
   src/ogre_slice.cpp
   src/submaps_display.cpp
