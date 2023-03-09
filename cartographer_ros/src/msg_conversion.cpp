@@ -267,13 +267,16 @@ ToPointCloudWithIntensities(const sensor_msgs::msg::PointCloud2& msg) {
   }
   ::cartographer::common::Time timestamp = FromRos(msg.header.stamp);
   if (!point_cloud.points.empty()) {
-    const double duration = point_cloud.points.back().time;
-    timestamp += cartographer::common::FromSeconds(duration);
+    // find the point which has the latest timestamp
+    double latest_diff = 0;
     for (auto& point : point_cloud.points) {
-      point.time -= duration;
-      CHECK_LE(point.time, 0.f)
-          << "Encountered a point with a larger stamp than "
-             "the last point in the cloud.";
+      if (latest_diff < point.time) {
+        latest_diff = point.time;
+      }
+    }
+    timestamp += cartographer::common::FromSeconds(latest_diff);
+    for (auto& point : point_cloud.points) {
+      point.time -= latest_diff;
     }
   }
   return std::make_tuple(point_cloud, timestamp);
