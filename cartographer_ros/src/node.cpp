@@ -64,11 +64,19 @@ template <typename MessageType>
                           const typename MessageType::ConstSharedPtr&),
     const int trajectory_id, const std::string& topic,
     ::rclcpp::Node::SharedPtr node_handle, Node* const node) {
+
+  rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>> subscription_options;
+  subscription_options.qos_overriding_options = rclcpp::QosOverridingOptions({
+      rclcpp::QosPolicyKind::Depth,
+      rclcpp::QosPolicyKind::Reliability,
+      rclcpp::QosPolicyKind::Durability
+    });
   return node_handle->create_subscription<MessageType>(
       topic, rclcpp::SensorDataQoS(),
       [node, handler, trajectory_id, topic](const typename MessageType::ConstSharedPtr msg) {
             (node->*handler)(trajectory_id, topic, msg);
-          });
+      },
+      subscription_options);
 }
 
 std::string TrajectoryStateToString(const TrajectoryState trajectory_state) {
