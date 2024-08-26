@@ -44,11 +44,13 @@ SensorBridge::SensorBridge(
     const bool ignore_out_of_order_messages, const std::string& tracking_frame,
     const double lookup_transform_timeout_sec, tf2_ros::Buffer* const tf_buffer,
     carto::mapping::TrajectoryBuilderInterface* const trajectory_builder,
+    bool use_enu_local_frame,
     const sensor_msgs::msg::NavSatFix::ConstSharedPtr& predefined_enu_frame_position)
     : num_subdivisions_per_laser_scan_(num_subdivisions_per_laser_scan),
       ignore_out_of_order_messages_(ignore_out_of_order_messages),
       tf_bridge_(tracking_frame, lookup_transform_timeout_sec, tf_buffer),
       trajectory_builder_(trajectory_builder),
+      use_enu_local_frame_(use_enu_local_frame),
       predefined_enu_frame_position_(predefined_enu_frame_position){}
 
 std::unique_ptr<carto::sensor::OdometryData> SensorBridge::ToOdometryData(
@@ -109,14 +111,19 @@ void SensorBridge::HandleNavSatFixMessage(
    if (predefined_enu_frame_position_) {
       ecef_to_local_frame_ =
         ComputeLocalFrameFromLatLong(predefined_enu_frame_position_->latitude,
-                                     predefined_enu_frame_position_->longitude);
+                                     predefined_enu_frame_position_->longitude,
+                                     use_enu_local_frame_);
         LOG(INFO) << "Using NavSatFix. Setting ecef_to_local_frame with a predefined frame lat = "
-              << predefined_enu_frame_position_->latitude << ", long = " << predefined_enu_frame_position_->longitude << ".";
+              << predefined_enu_frame_position_->latitude << ", long = " << predefined_enu_frame_position_->longitude
+              << ", use_enu_local_frame = " << use_enu_local_frame_ <<".";
     } else {
       ecef_to_local_frame_ =
-        ComputeLocalFrameFromLatLong(msg->latitude, msg->longitude);
+        ComputeLocalFrameFromLatLong(msg->latitude,
+                                     msg->longitude,
+                                     use_enu_local_frame_);
         LOG(INFO) << "Using NavSatFix. Setting ecef_to_local_frame with lat = "
-              << msg->latitude << ", long = " << msg->longitude << ".";
+              << msg->latitude << ", long = " << msg->longitude
+              << ", use_enu_local_frame = " << use_enu_local_frame_ <<".";
     }
   }
 

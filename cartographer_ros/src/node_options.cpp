@@ -52,6 +52,10 @@ NodeOptions CreateNodeOptions(
     options.use_pose_extrapolator =
         lua_parameter_dictionary->GetBool("use_pose_extrapolator");
   }
+  if (lua_parameter_dictionary->HasKey("nav_sat_use_enu_local_frame")) {
+    options.nav_sat_use_enu_local_frame =
+        lua_parameter_dictionary->GetBool("nav_sat_use_enu_local_frame");
+  }
   if (lua_parameter_dictionary->HasKey("nav_sat_use_predefined_enu_frame")) {
     options.nav_sat_use_predefined_enu_frame =
         lua_parameter_dictionary->GetBool("nav_sat_use_predefined_enu_frame");

@@ -153,6 +153,7 @@ int MapBuilderBridge::AddTrajectory(
       trajectory_options.tracking_frame,
       node_options_.lookup_transform_timeout_sec, tf_buffer_,
       map_builder_->GetTrajectoryBuilder(trajectory_id),
+      node_options_.nav_sat_use_enu_local_frame,
       predefined_enu_frame_position);
   auto emplace_result =
       trajectory_options_.emplace(trajectory_id, trajectory_options);

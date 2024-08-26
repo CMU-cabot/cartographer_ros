@@ -38,6 +38,7 @@ struct NodeOptions {
   bool publish_to_tf = true;
   bool publish_tracked_pose = false;
   bool use_pose_extrapolator = true;
+  bool nav_sat_use_enu_local_frame = false;
   bool nav_sat_use_predefined_enu_frame = false;
   double nav_sat_predefined_enu_frame_latitude;
   double nav_sat_predefined_enu_frame_longitude;

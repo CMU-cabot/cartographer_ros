@@ -82,6 +82,9 @@ Eigen::Vector3d LatLongAltToEcef(double latitude, double longitude,
 // frame that has z pointing upwards.
 cartographer::transform::Rigid3d ComputeLocalFrameFromLatLong(double latitude,
                                                               double longitude);
+cartographer::transform::Rigid3d ComputeLocalFrameFromLatLong(double latitude,
+                                                              double longitude,
+                                                              bool use_enu_local_frame);
 
 // Points to an occupancy grid message at a specific resolution from painted
 // submap slices obtained via ::cartographer::io::PaintSubmapSlices(...).
