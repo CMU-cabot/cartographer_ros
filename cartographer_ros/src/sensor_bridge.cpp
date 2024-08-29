@@ -113,7 +113,8 @@ void SensorBridge::HandleNavSatFixMessage(
         ComputeLocalFrameFromLatLong(predefined_enu_frame_position_->latitude,
                                      predefined_enu_frame_position_->longitude,
                                      use_enu_local_frame_);
-        LOG(INFO) << "Using NavSatFix. Setting ecef_to_local_frame with a predefined frame lat = "
+        LOG(INFO) << std::fixed << std::setprecision(9)
+              << "Using NavSatFix. Setting ecef_to_local_frame with a predefined frame lat = "
               << predefined_enu_frame_position_->latitude << ", long = " << predefined_enu_frame_position_->longitude
               << ", use_enu_local_frame = " << use_enu_local_frame_ <<".";
     } else {
@@ -121,7 +122,8 @@ void SensorBridge::HandleNavSatFixMessage(
         ComputeLocalFrameFromLatLong(msg->latitude,
                                      msg->longitude,
                                      use_enu_local_frame_);
-        LOG(INFO) << "Using NavSatFix. Setting ecef_to_local_frame with lat = "
+        LOG(INFO) << std::fixed << std::setprecision(9)
+              << "Using NavSatFix. Setting ecef_to_local_frame with lat = "
               << msg->latitude << ", long = " << msg->longitude
               << ", use_enu_local_frame = " << use_enu_local_frame_ <<".";
     }
