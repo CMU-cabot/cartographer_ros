@@ -59,8 +59,12 @@ NodeOptions CreateNodeOptions(
   if (lua_parameter_dictionary->HasKey("nav_sat_use_predefined_enu_frame")) {
     options.nav_sat_use_predefined_enu_frame =
         lua_parameter_dictionary->GetBool("nav_sat_use_predefined_enu_frame");
+  }
+  if (lua_parameter_dictionary->HasKey("nav_sat_predefined_enu_frame_latitude")) {
     options.nav_sat_predefined_enu_frame_latitude =
         lua_parameter_dictionary->GetDouble("nav_sat_predefined_enu_frame_latitude");
+  }
+  if (lua_parameter_dictionary->HasKey("nav_sat_predefined_enu_frame_longitude")) {
     options.nav_sat_predefined_enu_frame_longitude =
         lua_parameter_dictionary->GetDouble("nav_sat_predefined_enu_frame_longitude");
   }
