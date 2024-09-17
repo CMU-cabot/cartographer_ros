@@ -48,6 +48,7 @@ class SensorBridge {
       tf2_ros::Buffer* tf_buffer,
       ::cartographer::mapping::TrajectoryBuilderInterface* trajectory_builder,
       bool use_enu_local_frame,
+      bool use_spherical_mercator,
       const sensor_msgs::msg::NavSatFix::ConstSharedPtr& predefined_enu_frame_position);
 
   SensorBridge(const SensorBridge&) = delete;
@@ -100,6 +101,7 @@ class SensorBridge {
 
   absl::optional<::cartographer::transform::Rigid3d> ecef_to_local_frame_;
   bool use_enu_local_frame_;
+  bool use_spherical_mercator_;
   const sensor_msgs::msg::NavSatFix::ConstSharedPtr predefined_enu_frame_position_;
 };
 

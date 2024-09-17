@@ -344,6 +344,25 @@ geometry_msgs::msg::Point ToGeometryMsgPoint(const Eigen::Vector3d& vector3d) {
 
 Eigen::Vector3d LatLongAltToEcef(const double latitude, const double longitude,
                                  const double altitude) {
+  return LatLongAltToEcef(latitude, longitude, altitude, false);
+}
+
+Eigen::Vector3d LatLongAltToEcef(const double latitude, const double longitude,
+                                 const double altitude,
+                                 const bool use_spherical_mercator) {
+  if (use_spherical_mercator){
+    // Convert geodetic to ECEF coordinates on a sphere like EPSG:3857 (WGS 84 / Pseudo-Mercator -- Spherical Mercator)
+    constexpr double a = 6378137.;
+    const double sin_phi = std::sin(cartographer::common::DegToRad(latitude));
+    const double cos_phi = std::cos(cartographer::common::DegToRad(latitude));
+    const double sin_lambda = std::sin(cartographer::common::DegToRad(longitude));
+    const double cos_lambda = std::cos(cartographer::common::DegToRad(longitude));
+    const double x = (a + altitude) * cos_phi * cos_lambda;
+    const double y = (a + altitude) * cos_phi * sin_lambda;
+    const double z = (a + altitude) * sin_phi;
+    return Eigen::Vector3d(x, y, z);
+  }
+
   // https://en.wikipedia.org/wiki/Geographic_coordinate_conversion#From_geodetic_to_ECEF_coordinates
   constexpr double a = 6378137.;  // semi-major axis, equator to center.
   constexpr double f = 1. / 298.257223563;
@@ -365,12 +384,12 @@ Eigen::Vector3d LatLongAltToEcef(const double latitude, const double longitude,
 
 cartographer::transform::Rigid3d ComputeLocalFrameFromLatLong(
     const double latitude, const double longitude) {
-    return ComputeLocalFrameFromLatLong(latitude, longitude, false);
+    return ComputeLocalFrameFromLatLong(latitude, longitude, false, false);
 }
 
 cartographer::transform::Rigid3d ComputeLocalFrameFromLatLong(
-    const double latitude, const double longitude, const bool use_enu_local_frame) {
-  const Eigen::Vector3d translation = LatLongAltToEcef(latitude, longitude, 0.);
+    const double latitude, const double longitude, const bool use_enu_local_frame, const bool use_spherical_mercator) {
+  const Eigen::Vector3d translation = LatLongAltToEcef(latitude, longitude, 0., use_spherical_mercator);
   if (use_enu_local_frame){
     const Eigen::Quaterniond rotation =
         Eigen::AngleAxisd(cartographer::common::DegToRad(longitude), Eigen::Vector3d::UnitZ()) *
