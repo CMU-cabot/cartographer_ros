@@ -102,6 +102,16 @@ void SensorBridge::HandleOdometryMessage(
 void SensorBridge::HandleNavSatFixMessage(
     const std::string& sensor_id, const sensor_msgs::msg::NavSatFix::ConstSharedPtr& msg) {
   const carto::common::Time time = FromRos(msg->header.stamp);
+
+  if (IgnoreMessage(sensor_id, time)) {
+    LOG(WARNING) << "Ignored NavSatFix message from sensor " << sensor_id
+                 << " because sensor time " << time
+                 << " is not before last NavSatFix message time "
+                 << latest_sensor_time_[sensor_id];
+    return;
+  }
+  latest_sensor_time_[sensor_id] = time;
+
   if (msg->status.status == sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX) {
     trajectory_builder_->AddSensorData(
         sensor_id,
