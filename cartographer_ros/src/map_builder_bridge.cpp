@@ -155,7 +155,8 @@ int MapBuilderBridge::AddTrajectory(
       map_builder_->GetTrajectoryBuilder(trajectory_id),
       node_options_.nav_sat_use_enu_local_frame,
       node_options_.nav_sat_use_spherical_mercator,
-      predefined_enu_frame_position);
+      predefined_enu_frame_position,
+      node_options_.nav_sat_predefined_enu_frame_rotation);
   auto emplace_result =
       trajectory_options_.emplace(trajectory_id, trajectory_options);
   CHECK(emplace_result.second == true);

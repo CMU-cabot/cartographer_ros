@@ -46,14 +46,16 @@ SensorBridge::SensorBridge(
     carto::mapping::TrajectoryBuilderInterface* const trajectory_builder,
     bool use_enu_local_frame,
     bool use_spherical_mercator,
-    const sensor_msgs::msg::NavSatFix::ConstSharedPtr& predefined_enu_frame_position)
+    const sensor_msgs::msg::NavSatFix::ConstSharedPtr& predefined_enu_frame_position,
+    double predefined_enu_frame_rotation)
     : num_subdivisions_per_laser_scan_(num_subdivisions_per_laser_scan),
       ignore_out_of_order_messages_(ignore_out_of_order_messages),
       tf_bridge_(tracking_frame, lookup_transform_timeout_sec, tf_buffer),
       trajectory_builder_(trajectory_builder),
       use_enu_local_frame_(use_enu_local_frame),
       use_spherical_mercator_(use_spherical_mercator),
-      predefined_enu_frame_position_(predefined_enu_frame_position){}
+      predefined_enu_frame_position_(predefined_enu_frame_position),
+      predefined_enu_frame_rotation_(predefined_enu_frame_rotation){}
 
 std::unique_ptr<carto::sensor::OdometryData> SensorBridge::ToOdometryData(
     const nav_msgs::msg::Odometry::ConstSharedPtr& msg) {
@@ -124,22 +126,26 @@ void SensorBridge::HandleNavSatFixMessage(
       ecef_to_local_frame_ =
         ComputeLocalFrameFromLatLong(predefined_enu_frame_position_->latitude,
                                      predefined_enu_frame_position_->longitude,
+                                     predefined_enu_frame_rotation_,
                                      use_enu_local_frame_,
                                      use_spherical_mercator_);
         LOG(INFO) << std::fixed << std::setprecision(9)
               << "Using NavSatFix. Setting ecef_to_local_frame with a predefined frame lat = "
               << predefined_enu_frame_position_->latitude << ", long = " << predefined_enu_frame_position_->longitude
+              << ", rotation = " << predefined_enu_frame_rotation_
               << ", use_enu_local_frame = " << use_enu_local_frame_
               << ", use_spherical_mercator = " << use_spherical_mercator_ <<".";
     } else {
       ecef_to_local_frame_ =
         ComputeLocalFrameFromLatLong(msg->latitude,
                                      msg->longitude,
+                                     predefined_enu_frame_rotation_,
                                      use_enu_local_frame_,
                                      use_spherical_mercator_);
         LOG(INFO) << std::fixed << std::setprecision(9)
               << "Using NavSatFix. Setting ecef_to_local_frame with lat = "
               << msg->latitude << ", long = " << msg->longitude
+              << ", rotation = " << predefined_enu_frame_rotation_
               << ", use_enu_local_frame = " << use_enu_local_frame_
               << ", use_spherical_mercator = " << use_spherical_mercator_ <<".";
     }

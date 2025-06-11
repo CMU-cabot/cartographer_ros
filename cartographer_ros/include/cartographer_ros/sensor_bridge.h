@@ -49,7 +49,8 @@ class SensorBridge {
       ::cartographer::mapping::TrajectoryBuilderInterface* trajectory_builder,
       bool use_enu_local_frame,
       bool use_spherical_mercator,
-      const sensor_msgs::msg::NavSatFix::ConstSharedPtr& predefined_enu_frame_position);
+      const sensor_msgs::msg::NavSatFix::ConstSharedPtr& predefined_enu_frame_position,
+      double predefined_enu_frame_rotation);
 
   SensorBridge(const SensorBridge&) = delete;
   SensorBridge& operator=(const SensorBridge&) = delete;
@@ -103,6 +104,7 @@ class SensorBridge {
   bool use_enu_local_frame_;
   bool use_spherical_mercator_;
   const sensor_msgs::msg::NavSatFix::ConstSharedPtr predefined_enu_frame_position_;
+  double predefined_enu_frame_rotation_ = 0.0;
 };
 
 }  // namespace cartographer_ros

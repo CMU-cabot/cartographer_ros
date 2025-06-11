@@ -43,6 +43,7 @@ struct NodeOptions {
   bool nav_sat_use_predefined_enu_frame = false;
   double nav_sat_predefined_enu_frame_latitude;
   double nav_sat_predefined_enu_frame_longitude;
+  double nav_sat_predefined_enu_frame_rotation = 0.0;  // degree
 };
 
 NodeOptions CreateNodeOptions(

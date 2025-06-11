@@ -72,6 +72,10 @@ NodeOptions CreateNodeOptions(
     options.nav_sat_predefined_enu_frame_longitude =
         lua_parameter_dictionary->GetDouble("nav_sat_predefined_enu_frame_longitude");
   }
+  if (lua_parameter_dictionary->HasKey("nav_sat_predefined_enu_frame_rotation")) {
+    options.nav_sat_predefined_enu_frame_rotation =
+        lua_parameter_dictionary->GetDouble("nav_sat_predefined_enu_frame_rotation");
+  }
   return options;
 }
 

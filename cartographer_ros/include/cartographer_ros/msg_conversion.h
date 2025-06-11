@@ -89,6 +89,7 @@ cartographer::transform::Rigid3d ComputeLocalFrameFromLatLong(double latitude,
 
 cartographer::transform::Rigid3d ComputeLocalFrameFromLatLong(double latitude,
                                                               double longitude,
+                                                              double rotation_angle,
                                                               bool use_enu_local_frame,
                                                               bool use_spherical_mercator);
 

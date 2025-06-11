@@ -384,23 +384,27 @@ Eigen::Vector3d LatLongAltToEcef(const double latitude, const double longitude,
 
 cartographer::transform::Rigid3d ComputeLocalFrameFromLatLong(
     const double latitude, const double longitude) {
-    return ComputeLocalFrameFromLatLong(latitude, longitude, false, false);
+    return ComputeLocalFrameFromLatLong(latitude, longitude, 0.0, false, false);
 }
 
 cartographer::transform::Rigid3d ComputeLocalFrameFromLatLong(
-    const double latitude, const double longitude, const bool use_enu_local_frame, const bool use_spherical_mercator) {
+    const double latitude, const double longitude, const double rotation_angle,
+    const bool use_enu_local_frame, const bool use_spherical_mercator) {
   const Eigen::Vector3d translation = LatLongAltToEcef(latitude, longitude, 0., use_spherical_mercator);
   if (use_enu_local_frame){
     const Eigen::Quaterniond rotation =
         Eigen::AngleAxisd(cartographer::common::DegToRad(longitude), Eigen::Vector3d::UnitZ()) *
         Eigen::Quaterniond(Eigen::AngleAxisd(M_PI * 0.5 - cartographer::common::DegToRad(latitude), Eigen::Vector3d::UnitY())) *
-        Eigen::Quaterniond(Eigen::AngleAxisd(M_PI * 0.5, Eigen::Vector3d::UnitZ()));
+        Eigen::Quaterniond(Eigen::AngleAxisd(M_PI * 0.5, Eigen::Vector3d::UnitZ())) *
+        Eigen::Quaterniond(Eigen::AngleAxisd(cartographer::common::DegToRad(-rotation_angle), Eigen::Vector3d::UnitZ()));
     return cartographer::transform::Rigid3d(translation, rotation).inverse();
   } else{
     const Eigen::Quaterniond rotation =
         Eigen::AngleAxisd(cartographer::common::DegToRad(latitude - 90.),
                           Eigen::Vector3d::UnitY()) *
         Eigen::AngleAxisd(cartographer::common::DegToRad(-longitude),
+                          Eigen::Vector3d::UnitZ()) *
+        Eigen::AngleAxisd(cartographer::common::DegToRad(rotation_angle),
                           Eigen::Vector3d::UnitZ());
     return cartographer::transform::Rigid3d(rotation * -translation, rotation);
   }
