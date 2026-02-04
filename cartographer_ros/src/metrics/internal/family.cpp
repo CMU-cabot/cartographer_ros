@@ -17,6 +17,7 @@
 #include "cartographer_ros/metrics/internal/family.h"
 
 #include "absl/memory/memory.h"
+#include "absl/synchronization/mutex.h"
 #include "cartographer_ros/metrics/internal/counter.h"
 #include "cartographer_ros/metrics/internal/gauge.h"
 #include "cartographer_ros/metrics/internal/histogram.h"
@@ -27,6 +28,7 @@ namespace metrics {
 using BucketBoundaries = ::cartographer::metrics::Histogram::BucketBoundaries;
 
 Counter* CounterFamily::Add(const std::map<std::string, std::string>& labels) {
+  absl::MutexLock lock(&mutex_);
   auto wrapper = absl::make_unique<Counter>(labels);
   auto* ptr = wrapper.get();
   wrappers_.emplace_back(std::move(wrapper));
@@ -34,6 +36,7 @@ Counter* CounterFamily::Add(const std::map<std::string, std::string>& labels) {
 }
 
 cartographer_ros_msgs::msg::MetricFamily CounterFamily::ToRosMessage() {
+  absl::MutexLock lock(&mutex_);
   cartographer_ros_msgs::msg::MetricFamily family_msg;
   family_msg.name = name_;
   family_msg.description = description_;
@@ -44,6 +47,7 @@ cartographer_ros_msgs::msg::MetricFamily CounterFamily::ToRosMessage() {
 }
 
 Gauge* GaugeFamily::Add(const std::map<std::string, std::string>& labels) {
+  absl::MutexLock lock(&mutex_);
   auto wrapper = absl::make_unique<Gauge>(labels);
   auto* ptr = wrapper.get();
   wrappers_.emplace_back(std::move(wrapper));
@@ -51,6 +55,7 @@ Gauge* GaugeFamily::Add(const std::map<std::string, std::string>& labels) {
 }
 
 cartographer_ros_msgs::msg::MetricFamily GaugeFamily::ToRosMessage() {
+  absl::MutexLock lock(&mutex_);
   cartographer_ros_msgs::msg::MetricFamily family_msg;
   family_msg.name = name_;
   family_msg.description = description_;
@@ -62,6 +67,7 @@ cartographer_ros_msgs::msg::MetricFamily GaugeFamily::ToRosMessage() {
 
 Histogram* HistogramFamily::Add(
     const std::map<std::string, std::string>& labels) {
+  absl::MutexLock lock(&mutex_);
   auto wrapper = absl::make_unique<Histogram>(labels, boundaries_);
   auto* ptr = wrapper.get();
   wrappers_.emplace_back(std::move(wrapper));
@@ -69,6 +75,7 @@ Histogram* HistogramFamily::Add(
 }
 
 cartographer_ros_msgs::msg::MetricFamily HistogramFamily::ToRosMessage() {
+  absl::MutexLock lock(&mutex_);
   cartographer_ros_msgs::msg::MetricFamily family_msg;
   family_msg.name = name_;
   family_msg.description = description_;

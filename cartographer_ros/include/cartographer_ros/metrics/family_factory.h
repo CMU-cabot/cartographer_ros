@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/synchronization/mutex.h"
 #include "cartographer/metrics/family_factory.h"
 #include "cartographer_ros/metrics/internal/counter.h"
 #include "cartographer_ros/metrics/internal/family.h"
@@ -47,9 +48,11 @@ class FamilyFactory : public ::cartographer::metrics::FamilyFactory {
                          boundaries) override;
 
   void ReadMetrics(
-      cartographer_ros_msgs::srv::ReadMetrics::Response::SharedPtr response) const;
+      cartographer_ros_msgs::srv::ReadMetrics::Response::SharedPtr response) const
+      LOCKS_EXCLUDED(mutex_);
 
  private:
+  mutable absl::Mutex mutex_;
   std::vector<std::unique_ptr<CounterFamily>> counter_families_;
   std::vector<std::unique_ptr<GaugeFamily>> gauge_families_;
   std::vector<std::unique_ptr<HistogramFamily>> histogram_families_;

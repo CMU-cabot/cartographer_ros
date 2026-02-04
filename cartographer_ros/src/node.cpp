@@ -742,8 +742,7 @@ bool Node::handleWriteState(
 bool Node::handleReadMetrics(
     const cartographer_ros_msgs::srv::ReadMetrics::Request::SharedPtr,
     cartographer_ros_msgs::srv::ReadMetrics::Response::SharedPtr response) {
-
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(&metrics_mutex_);
   response->timestamp = node_->now();
   if (!metrics_registry_) {
     response->status.code = cartographer_ros_msgs::msg::StatusCode::UNAVAILABLE;

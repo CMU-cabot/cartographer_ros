@@ -182,6 +182,7 @@ class Node {
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   absl::Mutex mutex_;
+  absl::Mutex metrics_mutex_;
   std::unique_ptr<cartographer_ros::metrics::FamilyFactory> metrics_registry_;
   std::shared_ptr<MapBuilderBridge> map_builder_bridge_ GUARDED_BY(mutex_);
 

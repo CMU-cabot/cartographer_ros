@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/synchronization/mutex.h"
 #include "cartographer/metrics/family_factory.h"
 #include "cartographer_ros/metrics/internal/counter.h"
 #include "cartographer_ros/metrics/internal/gauge.h"
@@ -37,6 +38,7 @@ class CounterFamily
   cartographer_ros_msgs::msg::MetricFamily ToRosMessage();
 
  private:
+  absl::Mutex mutex_;
   std::string name_;
   std::string description_;
   std::vector<std::unique_ptr<Counter>> wrappers_;
@@ -52,6 +54,7 @@ class GaugeFamily
   cartographer_ros_msgs::msg::MetricFamily ToRosMessage();
 
  private:
+  absl::Mutex mutex_;
   std::string name_;
   std::string description_;
   std::vector<std::unique_ptr<Gauge>> wrappers_;
@@ -69,6 +72,7 @@ class HistogramFamily : public ::cartographer::metrics::Family<
   cartographer_ros_msgs::msg::MetricFamily ToRosMessage();
 
  private:
+  absl::Mutex mutex_;
   std::string name_;
   std::string description_;
   std::vector<std::unique_ptr<Histogram>> wrappers_;

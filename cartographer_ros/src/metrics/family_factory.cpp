@@ -17,6 +17,7 @@
 #include "cartographer_ros/metrics/family_factory.h"
 
 #include "absl/memory/memory.h"
+#include "absl/synchronization/mutex.h"
 
 namespace cartographer_ros {
 namespace metrics {
@@ -26,6 +27,7 @@ using BucketBoundaries = ::cartographer::metrics::Histogram::BucketBoundaries;
 ::cartographer::metrics::Family<::cartographer::metrics::Counter>*
 FamilyFactory::NewCounterFamily(const std::string& name,
                                 const std::string& description) {
+  absl::MutexLock lock(&mutex_);
   auto wrapper = absl::make_unique<CounterFamily>(name, description);
   auto* ptr = wrapper.get();
   counter_families_.emplace_back(std::move(wrapper));
@@ -35,6 +37,7 @@ FamilyFactory::NewCounterFamily(const std::string& name,
 ::cartographer::metrics::Family<::cartographer::metrics::Gauge>*
 FamilyFactory::NewGaugeFamily(const std::string& name,
                               const std::string& description) {
+  absl::MutexLock lock(&mutex_);
   auto wrapper = absl::make_unique<GaugeFamily>(name, description);
   auto* ptr = wrapper.get();
   gauge_families_.emplace_back(std::move(wrapper));
@@ -45,6 +48,7 @@ FamilyFactory::NewGaugeFamily(const std::string& name,
 FamilyFactory::NewHistogramFamily(const std::string& name,
                                   const std::string& description,
                                   const BucketBoundaries& boundaries) {
+  absl::MutexLock lock(&mutex_);
   auto wrapper =
       absl::make_unique<HistogramFamily>(name, description, boundaries);
   auto* ptr = wrapper.get();
@@ -54,6 +58,7 @@ FamilyFactory::NewHistogramFamily(const std::string& name,
 
 void FamilyFactory::ReadMetrics(
     cartographer_ros_msgs::srv::ReadMetrics::Response::SharedPtr response) const {
+  absl::MutexLock lock(&mutex_);
   for (const auto& counter_family : counter_families_) {
     response->metric_families.push_back(counter_family->ToRosMessage());
   }
