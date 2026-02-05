@@ -35,6 +35,7 @@ struct NodeOptions {
   double submap_publish_period_sec;
   double pose_publish_period_sec;
   double trajectory_publish_period_sec;
+  double local_to_global_cache_ttl_sec = 0.1;
   bool publish_to_tf = true;
   bool publish_tracked_pose = false;
   bool use_pose_extrapolator = true;

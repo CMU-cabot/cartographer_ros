@@ -261,11 +261,55 @@ MapBuilderBridge::GetLocalTrajectoryData() {
       local_slam_data = local_slam_data_.at(trajectory_id);
     }
 
+    const auto now = local_slam_data->time;
+    const double ttl_sec = node_options_.local_to_global_cache_ttl_sec;
+    cartographer::transform::Rigid3d local_to_map;
+    bool has_local_to_map = false;
+
+    const auto maybe_local_to_map =
+        map_builder_->pose_graph()->TryGetLocalToGlobalTransform(trajectory_id);
+    if (maybe_local_to_map.has_value()) {
+      local_to_map = *maybe_local_to_map;
+      has_local_to_map = true;
+      absl::MutexLock lock(&local_to_global_cache_mutex_);
+      local_to_global_cache_[trajectory_id] = {local_to_map, now, true};
+    } else {
+      CachedTransform cached;
+      bool has_cached = false;
+      {
+        absl::MutexLock lock(&local_to_global_cache_mutex_);
+        const auto it = local_to_global_cache_.find(trajectory_id);
+        if (it != local_to_global_cache_.end() && it->second.valid) {
+          cached = it->second;
+          has_cached = true;
+        }
+      }
+
+      bool cache_fresh = false;
+      if (has_cached && ttl_sec > 0.0 && now >= cached.stamp) {
+        const double age_sec =
+            cartographer::common::ToSeconds(now - cached.stamp);
+        cache_fresh = age_sec <= ttl_sec;
+      }
+
+      if (cache_fresh) {
+        local_to_map = cached.value;
+        has_local_to_map = true;
+      }
+    }
+
+    if (!has_local_to_map) {
+      local_to_map =
+          map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_id);
+      absl::MutexLock lock(&local_to_global_cache_mutex_);
+      local_to_global_cache_[trajectory_id] = {local_to_map, now, true};
+    }
+
     // Make sure there is a trajectory with 'trajectory_id'.
     CHECK_EQ(trajectory_options_.count(trajectory_id), 1);
     local_trajectory_data[trajectory_id] = {
         local_slam_data,
-        map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_id),
+        local_to_map,
         sensor_bridge.tf_bridge().LookupToTracking(
             local_slam_data->time,
             trajectory_options_[trajectory_id].published_frame),

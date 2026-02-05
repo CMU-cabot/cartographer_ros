@@ -23,6 +23,7 @@
 #include <unordered_map>
 
 #include "absl/synchronization/mutex.h"
+#include "cartographer/common/time.h"
 #include "cartographer/mapping/map_builder_interface.h"
 #include "cartographer/mapping/pose_graph_interface.h"
 #include "cartographer/mapping/proto/trajectory_builder_options.pb.h"
@@ -62,6 +63,12 @@ class MapBuilderBridge {
     cartographer::transform::Rigid3d local_to_map;
     std::unique_ptr<cartographer::transform::Rigid3d> published_to_tracking;
     TrajectoryOptions trajectory_options;
+  };
+
+  struct CachedTransform {
+    cartographer::transform::Rigid3d value;
+    ::cartographer::common::Time stamp;
+    bool valid = false;
   };
 
   MapBuilderBridge(
@@ -123,6 +130,10 @@ class MapBuilderBridge {
   std::unordered_map<int, TrajectoryOptions> trajectory_options_;
   std::unordered_map<int, std::unique_ptr<SensorBridge>> sensor_bridges_;
   std::unordered_map<int, size_t> trajectory_to_highest_marker_id_;
+
+  absl::Mutex local_to_global_cache_mutex_;
+  std::unordered_map<int, CachedTransform> local_to_global_cache_
+      GUARDED_BY(local_to_global_cache_mutex_);
 };
 
 }  // namespace cartographer_ros
