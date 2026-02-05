@@ -78,7 +78,10 @@ void Run() {
     node->StartTrajectoryWithDefaultTopics(trajectory_options);
   }
 
-  rclcpp::spin(cartographer_node);
+  rclcpp::executors::MultiThreadedExecutor executor(
+      rclcpp::ExecutorOptions(), 2);
+  executor.add_node(cartographer_node);
+  executor.spin();
 
   node->FinishAllTrajectories();
   node->RunFinalOptimization();

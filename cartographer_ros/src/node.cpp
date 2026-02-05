@@ -63,7 +63,8 @@ template <typename MessageType>
     void (Node::*handler)(int, const std::string&,
                           const typename MessageType::ConstSharedPtr&),
     const int trajectory_id, const std::string& topic,
-    ::rclcpp::Node::SharedPtr node_handle, Node* const node) {
+    ::rclcpp::Node::SharedPtr node_handle, Node* const node,
+    const rclcpp::CallbackGroup::SharedPtr& callback_group) {
 
   rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>> subscription_options;
   subscription_options.qos_overriding_options = rclcpp::QosOverridingOptions({
@@ -71,6 +72,7 @@ template <typename MessageType>
       rclcpp::QosPolicyKind::Reliability,
       rclcpp::QosPolicyKind::Durability
     });
+  subscription_options.callback_group = callback_group;
   return node_handle->create_subscription<MessageType>(
       topic, rclcpp::SensorDataQoS(),
       [node, handler, trajectory_id, topic](const typename MessageType::ConstSharedPtr msg) {
@@ -113,6 +115,11 @@ Node::Node(
     carto::metrics::RegisterAllMetrics(metrics_registry_.get());
   }
 
+  default_cb_group_ = node_->create_callback_group(
+      rclcpp::CallbackGroupType::MutuallyExclusive);
+  metrics_cb_group_ = node_->create_callback_group(
+      rclcpp::CallbackGroupType::MutuallyExclusive);
+
   submap_list_publisher_ =
       node_->create_publisher<::cartographer_ros_msgs::msg::SubmapList>(
           kSubmapListTopic, 10);
@@ -138,60 +145,79 @@ Node::Node(
   submap_query_server_ = node_->create_service<cartographer_ros_msgs::srv::SubmapQuery>(
       kSubmapQueryServiceName,
       std::bind(
-          &Node::handleSubmapQuery, this, std::placeholders::_1, std::placeholders::_2));
+          &Node::handleSubmapQuery, this, std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default,
+      default_cb_group_);
   trajectory_query_server = node_->create_service<cartographer_ros_msgs::srv::TrajectoryQuery>(
       kTrajectoryQueryServiceName,
       std::bind(
-          &Node::handleTrajectoryQuery, this, std::placeholders::_1, std::placeholders::_2));
+          &Node::handleTrajectoryQuery, this, std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default,
+      default_cb_group_);
   start_trajectory_server_ = node_->create_service<cartographer_ros_msgs::srv::StartTrajectory>(
       kStartTrajectoryServiceName,
       std::bind(
-          &Node::handleStartTrajectory, this, std::placeholders::_1, std::placeholders::_2));
+          &Node::handleStartTrajectory, this, std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default,
+      default_cb_group_);
   finish_trajectory_server_ = node_->create_service<cartographer_ros_msgs::srv::FinishTrajectory>(
       kFinishTrajectoryServiceName,
       std::bind(
-          &Node::handleFinishTrajectory, this, std::placeholders::_1, std::placeholders::_2));
+          &Node::handleFinishTrajectory, this, std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default,
+      default_cb_group_);
   write_state_server_ = node_->create_service<cartographer_ros_msgs::srv::WriteState>(
       kWriteStateServiceName,
       std::bind(
-          &Node::handleWriteState, this, std::placeholders::_1, std::placeholders::_2));
+          &Node::handleWriteState, this, std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default,
+      default_cb_group_);
   get_trajectory_states_server_ = node_->create_service<cartographer_ros_msgs::srv::GetTrajectoryStates>(
       kGetTrajectoryStatesServiceName,
       std::bind(
-          &Node::handleGetTrajectoryStates, this, std::placeholders::_1, std::placeholders::_2));
+          &Node::handleGetTrajectoryStates, this, std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default,
+      default_cb_group_);
   read_metrics_server_ = node_->create_service<cartographer_ros_msgs::srv::ReadMetrics>(
       kReadMetricsServiceName,
       std::bind(
-          &Node::handleReadMetrics, this, std::placeholders::_1, std::placeholders::_2));
+          &Node::handleReadMetrics, this, std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default,
+      metrics_cb_group_);
 
 
   submap_list_timer_ = node_->create_wall_timer(
     std::chrono::milliseconds(int(node_options_.submap_publish_period_sec * 1000)),
     [this]() {
       PublishSubmapList();
-    });
+    },
+    default_cb_group_);
   if (node_options_.pose_publish_period_sec > 0) {
     local_trajectory_data_timer_ = node_->create_wall_timer(
       std::chrono::milliseconds(int(node_options_.pose_publish_period_sec * 1000)),
       [this]() {
         PublishLocalTrajectoryData();
-      });
+      },
+      default_cb_group_);
   }
   trajectory_node_list_timer_ = node_->create_wall_timer(
     std::chrono::milliseconds(int(node_options_.trajectory_publish_period_sec * 1000)),
     [this]() {
       PublishTrajectoryNodeList();
-    });
+    },
+    default_cb_group_);
   landmark_pose_list_timer_ = node_->create_wall_timer(
     std::chrono::milliseconds(int(node_options_.trajectory_publish_period_sec * 1000)),
     [this]() {
       PublishLandmarkPosesList();
-    });
+    },
+    default_cb_group_);
   constrain_list_timer_ = node_->create_wall_timer(
     std::chrono::milliseconds(int(kConstraintPublishPeriodSec * 1000)),
     [this]() {
       PublishConstraintList();
-    });
+    },
+    default_cb_group_);
 }
 
 Node::~Node() { FinishAllTrajectories(); }
@@ -438,7 +464,8 @@ int Node::AddTrajectory(const TrajectoryOptions& options) {
     std::chrono::milliseconds(int(kTopicMismatchCheckDelaySec * 1000)),
     [this]() {
       MaybeWarnAboutTopicMismatch();
-    });
+    },
+    default_cb_group_);
   for (const auto& sensor_id : expected_sensor_ids) {
     subscribed_topics_.insert(sensor_id.id);
   }
@@ -451,21 +478,24 @@ void Node::LaunchSubscribers(const TrajectoryOptions& options,
        ComputeRepeatedTopicNames(kLaserScanTopic, options.num_laser_scans)) {
     subscribers_[trajectory_id].push_back(
         {SubscribeWithHandler<sensor_msgs::msg::LaserScan>(
-             &Node::HandleLaserScanMessage, trajectory_id, topic, node_, this),
+             &Node::HandleLaserScanMessage, trajectory_id, topic, node_, this,
+             default_cb_group_),
          topic});
   }
   for (const std::string& topic : ComputeRepeatedTopicNames(
            kMultiEchoLaserScanTopic, options.num_multi_echo_laser_scans)) {
     subscribers_[trajectory_id].push_back(
         {SubscribeWithHandler<sensor_msgs::msg::MultiEchoLaserScan>(
-             &Node::HandleMultiEchoLaserScanMessage, trajectory_id, topic, node_, this),
+             &Node::HandleMultiEchoLaserScanMessage, trajectory_id, topic, node_, this,
+             default_cb_group_),
          topic});
   }
   for (const std::string& topic :
        ComputeRepeatedTopicNames(kPointCloud2Topic, options.num_point_clouds)) {
     subscribers_[trajectory_id].push_back(
         {SubscribeWithHandler<sensor_msgs::msg::PointCloud2>(
-             &Node::HandlePointCloud2Message, trajectory_id, topic, node_, this),
+             &Node::HandlePointCloud2Message, trajectory_id, topic, node_, this,
+             default_cb_group_),
          topic});
   }
 
@@ -478,7 +508,7 @@ void Node::LaunchSubscribers(const TrajectoryOptions& options,
     subscribers_[trajectory_id].push_back(
         {SubscribeWithHandler<sensor_msgs::msg::Imu>(&Node::HandleImuMessage,
                                                 trajectory_id, kImuTopic,
-                                                node_, this),
+                                                node_, this, default_cb_group_),
          kImuTopic});
   }
 
@@ -486,21 +516,21 @@ void Node::LaunchSubscribers(const TrajectoryOptions& options,
     subscribers_[trajectory_id].push_back(
         {SubscribeWithHandler<nav_msgs::msg::Odometry>(&Node::HandleOdometryMessage,
                                                   trajectory_id, kOdometryTopic,
-                                                  node_, this),
+                                                  node_, this, default_cb_group_),
          kOdometryTopic});
   }
   if (options.use_nav_sat) {
     subscribers_[trajectory_id].push_back(
         {SubscribeWithHandler<sensor_msgs::msg::NavSatFix>(
              &Node::HandleNavSatFixMessage, trajectory_id, kNavSatFixTopic,
-             node_, this),
+             node_, this, default_cb_group_),
          kNavSatFixTopic});
   }
   if (options.use_landmarks) {
     subscribers_[trajectory_id].push_back(
         {SubscribeWithHandler<cartographer_ros_msgs::msg::LandmarkList>(
              &Node::HandleLandmarkMessage, trajectory_id, kLandmarkTopic,
-             node_, this),
+             node_, this, default_cb_group_),
          kLandmarkTopic});
   }
 }

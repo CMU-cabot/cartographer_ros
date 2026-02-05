@@ -186,6 +186,9 @@ class Node {
   std::unique_ptr<cartographer_ros::metrics::FamilyFactory> metrics_registry_;
   std::shared_ptr<MapBuilderBridge> map_builder_bridge_ GUARDED_BY(mutex_);
 
+  rclcpp::CallbackGroup::SharedPtr default_cb_group_;
+  rclcpp::CallbackGroup::SharedPtr metrics_cb_group_;
+
   rclcpp::Node::SharedPtr node_;
   ::rclcpp::Publisher<::cartographer_ros_msgs::msg::SubmapList>::SharedPtr submap_list_publisher_;
   ::rclcpp::Publisher<::visualization_msgs::msg::MarkerArray>::SharedPtr trajectory_node_list_publisher_;
