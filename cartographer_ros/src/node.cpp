@@ -56,6 +56,9 @@ using TrajectoryState =
     ::cartographer::mapping::PoseGraphInterface::TrajectoryState;
 
 namespace {
+
+constexpr int kAbsoluteInitialPoseTrajectoryId = -1;
+
 // Subscribes to the 'topic' for 'trajectory_id' using the 'node_handle' and
 // calls 'handler' on the 'node' to handle messages. Returns the subscriber.
 template <typename MessageType>
@@ -604,15 +607,21 @@ bool Node::handleStartTrajectory(
       return true;
     }
 
-    // Check if the requested trajectory for the relative initial pose exists.
-    response->status = TrajectoryStateToStatus(
-        request->relative_to_trajectory_id,
-        {TrajectoryState::ACTIVE, TrajectoryState::FROZEN,
-         TrajectoryState::FINISHED} /* valid states */);
-    if (response->status.code != cartographer_ros_msgs::msg::StatusCode::OK) {
-      LOG(ERROR) << "Can't start a trajectory with initial pose: "
-                 << response->status.message;
-      return true;
+    if (request->relative_to_trajectory_id ==
+        kAbsoluteInitialPoseTrajectoryId) {
+      LOG(INFO) << "Starting trajectory with an absolute initial pose in the "
+                << "map frame.";
+    } else {
+      // Check if the requested trajectory for the relative initial pose exists.
+      response->status = TrajectoryStateToStatus(
+          request->relative_to_trajectory_id,
+          {TrajectoryState::ACTIVE, TrajectoryState::FROZEN,
+           TrajectoryState::FINISHED} /* valid states */);
+      if (response->status.code != cartographer_ros_msgs::msg::StatusCode::OK) {
+        LOG(ERROR) << "Can't start a trajectory with initial pose: "
+                   << response->status.message;
+        return true;
+      }
     }
 
     ::cartographer::mapping::proto::InitialTrajectoryPose
